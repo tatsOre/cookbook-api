@@ -4,12 +4,12 @@ const { Schema } = mongoose;
 
 const ShoppingListSchema = new Schema(
   {
-    recipe: {
+    _recipe: {
       type: Schema.Types.ObjectId,
       ref: "Recipe",
-      required: "You must supply an recipe ID",
+      required: "You must supply an recipe id",
     },
-    author: {
+    _author: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: "You must supply an author for the shopping list",

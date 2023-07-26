@@ -1,57 +1,50 @@
-const createError = require("http-errors");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const express = require("express");
+const helmet = require("helmet");
 const logger = require("morgan");
-const passport = require("passport");
+require("express-async-errors")
+require("dotenv").config({ path: "variables.env" });
 
-// Register the models Schema
+// Register Models
 require("./models/Recipe");
 require("./models/User");
 require("./models/ShoppingList");
 
-require("dotenv").config({ path: "variables.env" });
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
 // MongoDB
 require("./config/db")();
-// Passport strategies
-require("./config/passport")();
 
-const adminRouter = require("./routes/admin");
-const assetRouter = require("./routes/assets");
-const indexRouter = require("./routes/index");
+const errorHandlerMiddleware = require('./middleware/error-handler')
+
+const app = express();
+
+// adding Helmet to enhance API's security
+app.use(helmet());
 
 app.use(
-  cors({
-    credentials: true,
-    origin: true,
-  })
+    cors({
+        credentials: true,
+        origin: true,
+    })
 );
-app.use(logger("dev"));
+app.use(logger("combined"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(passport.initialize());
 
 // App Custom Routes
-app.use("/admin/", adminRouter);
-app.use("/assets/", assetRouter);
-app.use("/api/v1/", indexRouter);
+app.get("/", (req, res) => res.status(200).send("Welcome to Cookbook API 2.0 :)"))
+require('./routes/auth')(app)
+require('./routes/recipes')(app)
+require('./routes/assets')(app)
 
 // catch 404 and forward to error handler
-app.use((req, res, next) => {
-  next(createError(404));
-});
+app.use((req, res) => res.status(404).send('Route does not exist'))
 
 // Handle errors
-app.use((err, req, res, next) => {
-  res.status(err.status || 500);
-  res.json({ message: [err.message] });
-});
+app.use(errorHandlerMiddleware)
 
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on port ${server.address().port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Listening on port`, PORT);
 });

@@ -3,6 +3,12 @@ const mongoose = require("mongoose");
 const UserModel = mongoose.model("User");
 const ShoppingListModel = mongoose.model("ShoppingList");
 
+
+/**
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
 /**
  * GET /api/v1/me/shopping_lists
  * Retrive full user profile information.
@@ -30,10 +36,6 @@ exports.getShopLists = async (req, res) => {
 exports.addOneShoppingList = async (req, res) => {
   req.body.author = req.user._id;
   const shopList = await ShoppingListModel.create({ ...req.body });
-
-  await UserModel.findByIdAndUpdate(req.user._id, {
-    $addToSet: { shopping_lists: shopList._id },
-  });
 
   res.json(shopList);
 };
@@ -63,9 +65,6 @@ exports.updateOneShoppingList = async (req, res) => {
 exports.deleteOneShoppingList = async (req, res) => {
   const { id } = req.params;
 
-  await UserModel.findByIdAndUpdate(req.user._id, {
-    $pull: { shopping_lists: id },
-  });
   await ShoppingListModel.findByIdAndDelete({ _id: id });
 
   res.status(204).send();

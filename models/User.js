@@ -1,68 +1,67 @@
-const bcrypt = require("bcrypt");
-const mongoose = require("mongoose");
-const mongodbErrorHandler = require("mongoose-mongodb-errors");
-const md5 = require("md5");
-const validator = require("validator");
+const bcrypt = require("bcryptjs")
+const mongoose = require("mongoose")
+const validator = require('validator')
+
+const SALT_VALUE = 10
 
 const { Schema } = mongoose;
 
-const UserSchema = new Schema(
-  {
+const UserSchema = new mongoose.Schema({
     name: String,
     email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      required: [true, "Email address is required"],
-      unique: true,
-      validate: [validator.isEmail, "Invalid email address"],
+        type: String,
+        lowercase: true,
+        trim: true,
+        unique: true,
+        required: [true, "Email cannot be empty"],
+        validate: {
+            validator: validator.isEmail,
+            message: "Please provide a valid email"
+        }
     },
     password: {
-      type: String,
-      minLength: [8, "Password must be at least 8 characters long"],
-      select: false,
+        type: String,
+        required: [true, 'Password cannot be empty'],
+        minlength: [6, "Password must be at least 6 characters"],
+        maxlength: 20,
     },
     providers: {
-      facebook: {
-        id: String,
-        email: String,
-      },
-      google: {
-        id: String,
-        email: String,
-        photo: String,
-      },
+        google: {
+            id: String,
+            email: String,
+            photo: String,
+        },
     },
     about: String,
-    photo: String,
-    recipes: [{ type: mongoose.Schema.ObjectId, ref: "Recipe" }],
+    avatar: String,
     favorites: [{ type: Schema.Types.ObjectId, ref: "Recipe" }],
-    shopping_lists: [{ type: Schema.Types.ObjectId, ref: "ShoppingList" }],
-    role: { type: String, enum: ["public", "user", "admin"] },
-  },
-  {
-    timestamps: true,
-  }
+    role: {
+        type: String,
+        enum: {
+            values: ['admin', 'user'],
+            message: `{VALUE} is not supported for user role`
+        },
+        default: 'user'
+    },
+},
+    { timestamps: true }
 );
 
-UserSchema.virtual("gravatar").get(function () {
-  const hash = md5(this.email);
-  return `https://gravatar.com/avatar/${hash}?s=200`;
-});
+UserSchema.pre('save', async function () {
+    // Hash the password only when it has changed (or new)
+    if (!this.isModified('password')) return
+    const salt = await bcrypt.genSalt(SALT_VALUE)
+    this.password = await bcrypt.hash(this.password, salt)
+})
 
-UserSchema.pre("save", async function (next) {
-  const hash = await bcrypt.hash(this.password, 10);
-  this.password = hash;
-  next();
-});
+UserSchema.methods.comparePassword = async function (password) {
+    const compare = await bcrypt.compare(password, this.password)
+    return compare
+}
 
-UserSchema.methods.isValidPassword = async function (password) {
-  const compare = bcrypt.compare(password, this.password);
-  return compare;
-};
+UserSchema.methods.toAuthObject = function () {
+    console.log('auth')
+    return { _id: this._id, email: this.email, name: this.name }
+}
 
-UserSchema.plugin(mongodbErrorHandler);
-
-const UserModel = mongoose.model("User", UserSchema);
-
-module.exports = UserModel;
+module.exports = mongoose.model('User', UserSchema)

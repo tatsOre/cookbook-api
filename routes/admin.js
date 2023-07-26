@@ -6,12 +6,16 @@ const RecipeModel = mongoose.model("Recipe");
 const ShoppingListModel = mongoose.model("ShoppingList");
 const UserModel = mongoose.model("User");
 
+router.get("/", (req, res) => {
+  res.status(200).send('Welcome Admin Susie')
+})
+
 // TODO: Create Auth system for admin role
 /**
  * GET /admin/users
  * Retrive all users.
  */
-router.get("/users", async (req, res, next) => {
+router.get("/users", async (req, res) => {
   const users = await UserModel.find().populate("recipes");
   res.json({ total: users.length, users });
 });

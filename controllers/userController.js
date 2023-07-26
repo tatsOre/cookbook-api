@@ -9,7 +9,7 @@ const ShoppingListModel = mongoose.model("ShoppingList");
  * Retrive full user profile information.
  */
 exports.getCurrentUser = (req, res) => {
-  res.json(req.user);
+    res.json(req.user);
 };
 
 /**
@@ -17,11 +17,11 @@ exports.getCurrentUser = (req, res) => {
  * Retrieve user public profile/account information.
  */
 exports.getOneUser = async (req, res) => {
-  const user = await UserModel.findOne({ _id: req.params.id })
-    .select("-providers -favorites -shopping_lists")
-    .populate("recipes"); // change to public recipes
+    const user = await UserModel.findOne({ _id: req.params.id })
+        .select("-providers -favorites -shopping_lists")
+        .populate("recipes"); // change to public recipes
 
-  res.json(user);
+    res.json(user);
 };
 
 /** // TODO change route to /api/v1/me/update
@@ -29,14 +29,14 @@ exports.getOneUser = async (req, res) => {
  * Update user.
  */
 exports.updateOneUser = async (req, res) => {
-  // TODO change routes and params with passport authorization
-  const { id } = req.params;
-  const user = await UserModel.findOneAndUpdate({ _id: id }, req.body, {
-    runValidators: true,
-    new: true,
-  });
+    // TODO change routes and params with passport authorization
+    const { id } = req.params;
+    const user = await UserModel.findOneAndUpdate({ _id: id }, req.body, {
+        runValidators: true,
+        new: true,
+    });
 
-  res.json({ message: "Your profile information has been updated", user });
+    res.json({ message: "Your profile information has been updated", user });
 };
 
 /** TODO change route to /api/v1/me/delete
@@ -44,13 +44,13 @@ exports.updateOneUser = async (req, res) => {
  * Delete user.
  */
 exports.deleteOneUser = async (req, res) => {
-  // TODO change routes and params with passport authorization
-  const { id: userID } = req.params;
-  await RecipeModel.deleteMany({ author: userID });
-  await ShoppingListModel.deleteMany({ author: userID });
-  await UserModel.deleteOne({ _id: id });
+    // TODO change routes and params with passport authorization
+    const { id: userID } = req.params;
+    await RecipeModel.deleteMany({ author: userID });
+    await ShoppingListModel.deleteMany({ author: userID });
+    await UserModel.deleteOne({ _id: id });
 
-  res.json({ message: "All your information has been deleted" });
+    res.json({ message: "All your information has been deleted" });
 };
 
 /**
@@ -58,11 +58,11 @@ exports.deleteOneUser = async (req, res) => {
  * Retrieve user recipes.
  */
 exports.getUserRecipes = async (req, res) => {
-  const user = await UserModel.findOne({ _id: req.user._id })
-    .select("recipes")
-    .populate("recipes");
+    const user = await UserModel.findOne({ _id: req.user._id })
+        .select("recipes")
+        .populate("recipes");
 
-  return res.json(user);
+    return res.json(user);
 };
 
 /**
@@ -70,11 +70,11 @@ exports.getUserRecipes = async (req, res) => {
  * Retrieve user favorites.
  */
 exports.getFavorites = async (req, res) => {
-  const user = await UserModel.findOne({ _id: req.user._id })
-    .select("favorites")
-    .populate("favorites");
+    const user = await UserModel.findOne({ _id: req.user._id })
+        .select("favorites")
+        .populate("favorites");
 
-  return res.json(user);
+    return res.json(user);
 };
 
 /**
@@ -82,15 +82,15 @@ exports.getFavorites = async (req, res) => {
  * Add/Remove a recipe to/from user favorites.
  */
 exports.updateFavorites = async (req, res) => {
-  const favorites = req.user.favorites.map((obj) => obj.toString());
-  const operator = favorites.includes(req.body.recipe) ? "$pull" : "$addToSet";
-  const user = await UserModel.findByIdAndUpdate(
-    req.user._id,
-    { [operator]: { favorites: req.body.recipe } },
-    { new: true }
-  );
+    const favorites = req.user.favorites.map((obj) => obj.toString());
+    const operator = favorites.includes(req.body.recipe) ? "$pull" : "$addToSet";
+    const user = await UserModel.findByIdAndUpdate(
+        req.user._id,
+        { [operator]: { favorites: req.body.recipe } },
+        { new: true }
+    );
 
-  return res.json(user);
+    return res.json(user);
 };
 
 /**
@@ -98,21 +98,21 @@ exports.updateFavorites = async (req, res) => {
  * field: [recipes || favorites]
  */
 exports.searchUserRecipes = async (req, res) => {
-  const { field, q } = req.query;
+    const { field, q } = req.query;
 
-  const user = await UserModel.findOne({
-    _id: req.user._id,
-  }).populate({
-    path: field,
-    select: "-author",
-    match: {
-      $or: [
-        { title: new RegExp(q, "gi") },
-        { categories: new RegExp(q, "gi") },
-        { cuisine: new RegExp(q, "gi") },
-      ],
-    },
-  });
+    const user = await UserModel.findOne({
+        _id: req.user._id,
+    }).populate({
+        path: field,
+        select: "-author",
+        match: {
+            $or: [
+                { title: new RegExp(q, "gi") },
+                { categories: new RegExp(q, "gi") },
+                { cuisine: new RegExp(q, "gi") },
+            ],
+        },
+    });
 
-  res.json(user[field]);
+    res.json(user[field]);
 };

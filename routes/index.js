@@ -1,7 +1,9 @@
-const passport = require("passport");
+
 const router = require("express").Router();
 
 const { catchErrors } = require("../lib/errorHandlers");
+
+
 
 /*
   Index
@@ -84,125 +86,9 @@ router.patch("/user/:id", catchErrors(userController.updateOneUser));
  */
 router.delete("/user/:id", catchErrors(userController.deleteOneUser));
 
-/*
-  Routes for Register and Auth Users Controller
-*/
-const authController = require("../controllers/authController");
 
-/**
- * POST /api/v1/auth/register
- * Add/Register new user with local signup.
- */
-router.post(
-  "/auth/register",
-  catchErrors(authController.confirmPasswords),
-  catchErrors(authController.registerUser),
-  catchErrors(authController.login),
-  authController.setJWTcookie
-);
 
-/**
- * POST /api/v1/auth/login
- * Login a user - local login. Set JWT Cookie and send user main info.
- */
-router.post(
-  "/auth/login",
-  catchErrors(authController.login),
-  authController.setJWTcookie
-);
 
-/**
- * GET /api/v1/auth/logout
- * Removes JWT Cookie and logout the user.
- */
-router.get("/auth/logout", catchErrors(authController.logout));
-
-/**
- * GET /api/v1/auth/google
- * Authenticate Google Users and retrieve their profile and email address.
- */
-router.use(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
-/**
- * GET /api/v1/auth/google_redirect
- * Register|Find Google Users. Set JWT Cookie and send user main info.
- */
-const REDIRECT =
-  process.env.NODE_ENV !== "development"
-    ? process.env.CLIENT_ADDRESS
-    : "http://localhost:3001";
-
-router.get(
-  "/auth/google_redirect",
-  passport.authenticate("google", {
-    assignProperty: "googleUser",
-    failureRedirect: `${REDIRECT}/login`, // Todo: change to client address
-  }),
-  authController.registerGoogleUser
-);
-
-/*
-  Routes for Recipes Controller
-*/
-const recipeController = require("../controllers/recipeController");
-
-/**
- * GET /api/v1/recipes
- * Retrieve the list of all public recipe items with optional pagination.
- * EX: http://localhost:3000/api/v1/recipes?page=2&limit=2
- */
-router.get("/recipes", catchErrors(recipeController.getRecipes));
-
-/**
- * GET /api/v1/recipes/sort?:query
- * Sort public recipes by query (category|cuisine).
- */
-router.get("/recipes/sort", catchErrors(recipeController.getRecipesByQuery));
-
-/**
- * GET /api/v1/recipes/latest
- */
-router.get("/recipes/latest", catchErrors(recipeController.getLatestRecipes));
-
-/**
- * GET /api/v1/recipe/:id
- */
-router.get("/recipe/:id", catchErrors(recipeController.getOneRecipe));
-
-/**
- * POST /api/v1/recipe
- */
-router.post(
-  "/recipe",
-  passport.authenticate("jwt", { session: false }),
-  catchErrors(recipeController.addOneRecipe)
-);
-
-/**
- * PATCH /api/v1/recipe/:id
- */
-router.patch(
-  "/recipe/:id",
-  passport.authenticate("jwt", { session: false }),
-  catchErrors(recipeController.updateOneRecipe)
-);
-
-/**
- * DELETE /api/v1/recipe/:id
- */
-router.delete(
-  "/recipe/:id",
-  passport.authenticate("jwt", { session: false }),
-  catchErrors(recipeController.deleteOneRecipe)
-);
-
-/**
- * GET /api/v1/recipes/search?q=[query]
- */
-router.get("/recipes/search", catchErrors(recipeController.searchRecipes));
 
 /*
   Routes for Shopping Lists

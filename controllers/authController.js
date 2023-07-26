@@ -1,146 +1,110 @@
 const jwt = require("jsonwebtoken");
-
-const UserModel = require("../models/User");
-
+const { StatusCodes } = require('http-status-codes')
+const User = require("../models/User");
+const { BadRequestError, UnauthenticatedError } = require('../errors')
 const {
-  DuplicateKeyError,
-  InvalidPropertyError,
-  NotFoundError,
-} = require("../lib/errorHandlers");
+    DUPLICATE_EMAIL, INVALID_FORMAT, NOT_FOUND
+} = require('../errors/response-messages')
 
 /**
- * POST /api/v1/auth/register
- * Add new user item.
+ * POST /api/v2/auth/register
+ * Registers user in DB.
  */
-exports.registerUser = async (req, res, next) => {
-  const { name, email, password } = req.body;
+const register = async (req, res) => {
+    const { email, password } = req.body
 
-  let user = await UserModel.findOne({ email });
-  if (user)
-    throw new DuplicateKeyError("This email address is already being used");
-
-  await UserModel.create({ name, email, password });
-  next();
-};
-
-/**
- * GET /api/v1/auth/google_redirect
- * Register|Find Google Users.
- */
-exports.registerGoogleUser = async (req, res, next) => {
-  const REDIRECT =
-    process.env.NODE_ENV !== "development"
-      ? process.env.CLIENT_ADDRESS
-      : "http://localhost:3001";
-
-  const { googleUser } = req;
-  let user = await UserModel.findOne({ "providers.google.id": googleUser.id });
-  if (!user) {
-    user = await UserModel.create({
-      name: googleUser._json.name,
-      email: googleUser._json.email,
-      password: googleUser._json.email + googleUser._json.sub,
-      providers: {
-        google: {
-          id: googleUser._json.sub,
-          email: googleUser._json.email,
-          displayName: googleUser._json.name,
-        },
-      },
-      photo: googleUser._json.picture,
-    });
-  }
-  const body = { _id: user._id, email: user.email };
-  const expiresIn = "7d";
-  const token = jwt.sign({ user: body }, process.env.JWT_SECRET, {
-    expiresIn,
-  });
-
-  res
-    .cookie(process.env.COOKIE_SECRET, token, {
-      expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-      secure: process.env.NODE_ENV === "development" ? false : true,
+    if (!email || !password) {
+        throw new BadRequestError(INVALID_FORMAT.MISSING_CREDENTIALS)
+    }
+    let user = await User.findOne({ email })
+    if (user) {
+        throw new BadRequestError(DUPLICATE_EMAIL)
+    }
+    user = await User.create({
+        email,
+        password
     })
-    .redirect(REDIRECT);
-};
+    res.status(StatusCodes.CREATED).send({ message: `New user inserted: ${user._id}` })
+}
 
 /**
- * POST /api/v1/auth/login
+ * POST /api/v2/auth/login
  * Login a user - local login.
  */
-exports.login = async (req, res, next) => {
-  const { email, password } = req.body;
-  const user = await UserModel.findOne({ email }).select("+password");
-  if (!user)
-    throw new NotFoundError(
-      "Email not found or you do not have an account yet"
-    );
+const login = async (req, res) => {
+    const { email, password } = req.body
 
-  const validate = await user.isValidPassword(password);
-  if (!validate)
-    throw new InvalidPropertyError("Your email and password do not match");
+    if (!email || !password) {
+        throw new BadRequestError(INVALID_FORMAT.MISSING_CREDENTIALS)
+    }
+    let user = await User.findOne({ email })
 
-  req.user = user;
-  next();
-};
+    if (!user) {
+        throw new UnauthenticatedError(NOT_FOUND.USER_NOT_FOUND)
+    }
+
+    const isPassportValid = await user.comparePassword(password)
+    if (!isPassportValid) {
+        throw new UnauthenticatedError(INVALID_FORMAT.INVALID_CREDENTIALS)
+    }
+    const payload = user.toAuthObject()
+
+    const token = signJWT(payload)
+
+    res.status(StatusCodes.OK)
+        .cookie(process.env.COOKIE_SECRET, token, {
+            expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
+            secure: process.env.NODE_ENV === "development",
+        })
+        .send({ message: 'Success' })
+}
 
 /**
  * Set JWT Cookie and send user main info.
+ * Make this two functions utils
  */
-exports.setJWTcookie = async (req, res) => {
-  const { user } = req;
-  const body = { _id: user._id, email: user.email };
-  const expiresIn = "7d";
-  const token = jwt.sign({ user: body }, process.env.JWT_SECRET, {
-    expiresIn,
-  });
-  res
-    .cookie(process.env.COOKIE_SECRET, token, {
-      expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-      secure: process.env.NODE_ENV === "development" ? false : true,
-    })
-    .json({ message: ["successfully logged in"] });
-};
+const signJWT = (payload) => {
+    const token = jwt.sign(
+        { user: payload, iat: Date.now() },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_LIFETIME }
+    )
+    return token;
+}
 
-exports.getUserFromJWT = (req) => {
-  let token = "";
-  if (req && req.cookies) {
-    token = req.cookies[process.env.COOKIE_SECRET];
-  }
-  const decoded = jwt.verify(
+const verifyJWT = (token) => jwt.verify(
     token,
     process.env.JWT_SECRET,
-    (error, decoded) => {
-      if (error) return null;
-      return decoded;
+    function (error, decoded) {
+        return error ? null : decoded
     }
-  );
-  return decoded;
+);
+
+const getUserFromJWT = (req) => {
+    let token = "";
+    if (req && req.cookies) {
+        token = req.cookies[process.env.COOKIE_SECRET];
+    }
+    const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET,
+        (error, decoded) => {
+            if (error) return null;
+            return decoded;
+        }
+    );
+    return decoded;
 };
+
 
 /**
  * GET /api/v1/auth/logout
  */
-exports.logout = async (req, res) => {
-  res.clearCookie(process.env.COOKIE_SECRET, {
-    expires: new Date(0),
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-    secure: process.env.NODE_ENV === "development" ? false : true,
-  });
-  res.json({ message: ["logout successful"] });
-};
+const logout = async (req, res) => {
+    // todo: blacklist with redis
+    res.status(StatusCodes.OK).json({ msg: "Success" })
+}
 
-/**
- * Handler
- */
-exports.confirmPasswords = async (req, res, next) => {
-  if (req.body.password !== req.body["confirm_password"]) {
-    throw new InvalidPropertyError("Your passwords do not match");
-  }
-  next();
-};
+module.exports = { register, login, logout, signJWT, verifyJWT }
