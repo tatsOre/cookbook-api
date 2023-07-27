@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
         lowercase: true,
         trim: true,
         unique: true,
-        required: [true, "Email cannot be empty"],
+        required: [true, "Please provide an email address"],
         validate: {
             validator: validator.isEmail,
             message: "Please provide a valid email"
@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password cannot be empty'],
+        required: [true, 'Please create a password'],
         minlength: [6, "Password must be at least 6 characters"],
         maxlength: 20,
     },

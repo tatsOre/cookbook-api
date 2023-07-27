@@ -2,9 +2,6 @@
 const router = require("express").Router();
 
 const { catchErrors } = require("../lib/errorHandlers");
-
-
-
 /*
   Index
 */

@@ -7,7 +7,7 @@ module.exports = {
     },
     TOO_MANY_REQUESTS: "Too many requests. Try again later.",
     INVALID_FORMAT: {
-        MISSING_CREDENTIALS: "Provide email and/or password",
+        MISSING_CREDENTIALS: "Please provide an email address and/or password",
         INVALID_CREDENTIALS: "Incorrect or missing password",
     },
     DUPLICATE_EMAIL: "This email is already associated with an account",
