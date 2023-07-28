@@ -57,6 +57,7 @@ const login = async (req, res) => {
         .cookie(process.env.COOKIE_SECRET, token, {
             expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
             httpOnly: true,
+            sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
             secure: process.env.NODE_ENV === "development",
         })
         .send({ message: 'Success' })
