@@ -1,6 +1,7 @@
 const mongoose = require("mongoose")
 const { StatusCodes } = require('http-status-codes')
 const { NotFoundError } = require("../errors")
+const { NOT_FOUND, SUCCESS } = require("../errors/response-messages")
 const Recipe = mongoose.model("Recipe")
 
 exports.findDocument = async (req, res, next) => {
@@ -9,7 +10,7 @@ exports.findDocument = async (req, res, next) => {
         req.recipe = doc
         next()
     } else {
-        throw new NotFoundError(`No resource found with id: ${req.params.id}`)
+        throw new NotFoundError(NOT_FOUND.RESOURCE_NOT_FOUND(req.params.id))
     }
 }
 
@@ -19,20 +20,14 @@ exports.findDocument = async (req, res, next) => {
  */
 exports.getAllRecipes = async (req, res) => {
     const docs = await Recipe.find({})
-
-    res.status(StatusCodes.OK).json({
-        count: docs.length, items: docs
-    })
+    res.status(StatusCodes.OK).json({ count: docs.length, items: docs })
 }
 
 /**  POST /api/v2/recipe  */
 exports.createRecipe = async (req, res) => {
     //req.body.author = req.user._id;
     const doc = await Recipe.create({ ...req.body })
-
-    res
-        .status(StatusCodes.CREATED)
-        .send({ message: 'Success', id: doc._id })
+    res.status(StatusCodes.CREATED).send({ message: SUCCESS, id: doc._id })
 }
 
 /**  GET /api/v2/recipe/:id  */
@@ -50,7 +45,7 @@ exports.getRecipe = async (req, res) => {
             }
         }
      */
-    res.status(StatusCodes.OK).json(req.recipe)
+    res.status(StatusCodes.OK).json({ message: SUCCESS, data: req.recipe})
 }
 
 /**  PATCH /api/v2/recipe/:id  */
@@ -62,9 +57,7 @@ exports.updateRecipe = async (req, res) => {
         { runValidators: true }
     )
 
-    res
-        .status(StatusCodes.OK)
-        .send({ message: 'Success', id: doc._id })
+    res.status(StatusCodes.OK).send({ message: SUCCESS, id: doc._id })
 }
 
 /**
@@ -72,7 +65,7 @@ exports.updateRecipe = async (req, res) => {
  */
 exports.deleteRecipe = async (req, res) => {
     await Recipe.findByIdAndDelete({ _id: req.params.id })
-    res.status(StatusCodes.OK).send({ message: 'Success' })
+    res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 
 /**

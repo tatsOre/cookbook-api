@@ -3,7 +3,7 @@ const { StatusCodes } = require('http-status-codes')
 const User = require("../models/User");
 const { BadRequestError, UnauthenticatedError } = require('../errors')
 const {
-    DUPLICATE_EMAIL, INVALID_FORMAT, NOT_FOUND
+    DUPLICATE_EMAIL, INVALID_FORMAT, NOT_FOUND, SUCCESS
 } = require('../errors/response-messages')
 
 /**
@@ -17,16 +17,13 @@ const register = async (req, res) => {
         throw new BadRequestError(INVALID_FORMAT.MISSING_CREDENTIALS)
     }
     let user = await User.findOne({ email })
+
     if (user) {
         throw new BadRequestError(DUPLICATE_EMAIL)
     }
-    user = await User.create({
-        email,
-        password
-    })
-    res
-        .status(StatusCodes.CREATED)
-        .send({ message: `New user inserted: ${user._id}` })
+    user = await User.create({ email, password })
+
+    res.status(StatusCodes.CREATED).send({ message: SUCCESS })
 }
 
 /**
@@ -46,6 +43,7 @@ const login = async (req, res) => {
     }
 
     const isPassportValid = await user.comparePassword(password)
+    
     if (!isPassportValid) {
         throw new UnauthenticatedError(INVALID_FORMAT.INVALID_CREDENTIALS)
     }
@@ -58,9 +56,9 @@ const login = async (req, res) => {
             expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
             httpOnly: true,
             sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-            secure: process.env.NODE_ENV === "development",
+            secure: process.env.NODE_ENV === "development" ? false : true
         })
-        .send({ message: 'Success' })
+        .send({ message: SUCCESS })
 }
 
 /**
@@ -106,7 +104,7 @@ const getUserFromJWT = (req) => {
  */
 const logout = async (req, res) => {
     // todo: blacklist with redis
-    res.status(StatusCodes.OK).json({ msg: "Success" })
+    res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 
 module.exports = { register, login, logout, signJWT, verifyJWT }
