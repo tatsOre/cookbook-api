@@ -1,8 +1,28 @@
 const mongoose = require("mongoose");
+const { StatusCodes } = require('http-status-codes')
+const { NotFoundError, BadRequestError } = require("../errors");
+const {
+    NOT_FOUND, INVALID_FORMAT, SUCCESS, FAILURE
+} = require("../errors/response-messages")
 
 const UserModel = mongoose.model("User");
 const RecipeModel = mongoose.model("Recipe");
 const ShoppingListModel = mongoose.model("ShoppingList");
+
+
+exports.lookUpByEmail = async (req, res) => {
+    const { email } = req.body
+
+    if (!email) throw new BadRequestError(INVALID_FORMAT.MISSING_CREDENTIALS)
+
+    const doc = await UserModel.findOne({ email })
+
+    res.status(StatusCodes.OK).json({
+        message: doc ? SUCCESS : FAILURE,
+        displayName: email,
+        emailExist: doc ? true : false
+    })
+}
 
 /**
  * GET /api/v1/me

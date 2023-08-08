@@ -64,7 +64,8 @@ exports.updateRecipe = async (req, res) => {
  * DELETE /api/v1/recipe/:id
  */
 exports.deleteRecipe = async (req, res) => {
-    await Recipe.findByIdAndDelete({ _id: req.params.id })
+    await Recipe.deleteMany({ title: 'curry'})
+    //await Recipe.findByIdAndDelete({ _id: req.params.id })
     res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 

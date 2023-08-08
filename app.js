@@ -27,6 +27,7 @@ app.use(
         origin: true,
     })
 );
+
 app.use(logger("combined"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -36,6 +37,7 @@ app.use(cookieParser());
 app.get("/", (req, res) => res.status(200).send("Welcome to Cookbook API 2.0 :)"))
 require('./routes/auth')(app)
 require('./routes/recipes')(app)
+require('./routes/user')(app)
 require('./routes/assets')(app)
 
 // catch 404 and forward to error handler
