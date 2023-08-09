@@ -1,10 +1,11 @@
-const jwt = require("jsonwebtoken");
 const { StatusCodes } = require('http-status-codes')
-const User = require("../models/User");
+const JWT = require('../services/jwt');
 const { BadRequestError, UnauthenticatedError } = require('../errors')
 const {
     DUPLICATE_EMAIL, INVALID_FORMAT, NOT_FOUND, SUCCESS
 } = require('../errors/response-messages')
+
+const User = require("../models/User");
 
 /**
  * POST /api/v2/auth/register
@@ -28,9 +29,9 @@ const register = async (req, res) => {
 
 /**
  * POST /api/v2/auth/login
- * Login a user - local login.
+ * Login user - local login with email and password.
  */
-const login = async (req, res) => {
+const login = async (req, res, next) => {
     const { email, password } = req.body
 
     if (!email || !password) {
@@ -42,14 +43,19 @@ const login = async (req, res) => {
         throw new UnauthenticatedError(NOT_FOUND.USER_NOT_FOUND)
     }
 
-    const isPassportValid = await user.comparePassword(password)
-    
-    if (!isPassportValid) {
+    const isPasswordValid = await user.comparePassword(password)
+
+    if (!isPasswordValid) {
         throw new UnauthenticatedError(INVALID_FORMAT.INVALID_CREDENTIALS)
     }
-    const payload = user.toAuthObject()
+    req.user = user
+    next()
+}
 
-    const token = signJWT(payload)
+const setAuthJWTCookie = (req, res) => {
+    const payload = req.user && req.user.toAuthObject()
+
+    const token = JWT.sign(payload)
 
     res.status(StatusCodes.OK)
         .cookie(process.env.COOKIE_SECRET, token, {
@@ -62,49 +68,10 @@ const login = async (req, res) => {
 }
 
 /**
- * Set JWT Cookie and send user main info.
- * Make this two functions utils
- */
-const signJWT = (payload) => {
-    const token = jwt.sign(
-        { user: payload, iat: Date.now() },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_LIFETIME }
-    )
-    return token;
-}
-
-const verifyJWT = (token) => jwt.verify(
-    token,
-    process.env.JWT_SECRET,
-    function (error, decoded) {
-        return error ? null : decoded
-    }
-);
-
-const getUserFromJWT = (req) => {
-    let token = "";
-    if (req && req.cookies) {
-        token = req.cookies[process.env.COOKIE_SECRET];
-    }
-    const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET,
-        (error, decoded) => {
-            if (error) return null;
-            return decoded;
-        }
-    );
-    return decoded;
-};
-
-
-/**
- * GET /api/v1/auth/logout
+ * GET /api/v2/auth/logout
  */
 const logout = async (req, res) => {
-    // todo: blacklist with redis
     res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 
-module.exports = { register, login, logout, signJWT, verifyJWT }
+module.exports = { register, login, logout, setAuthJWTCookie }

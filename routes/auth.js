@@ -1,12 +1,12 @@
 const auth = require("../controllers/authController");
+const JWT = require('../services/jwt')
 
 module.exports = app => {
     app.get(
         "/api/v2/auth/auth",
         (req, res) => {
-            console.log(req.cookies)
             const token = req.cookies[process.env.COOKIE_SECRET]
-            const decoded = auth.verifyJWT(token)
+            const decoded = JWT.verify(token)
             res.json({ token, data: decoded })
         }
     )
@@ -19,7 +19,7 @@ module.exports = app => {
     app.post(
         "/api/v2/auth/login",
         auth.login,
-        auth.signJWT
+        auth.setAuthJWTCookie
     )
 
     app.get('/api/v2/auth/logout', auth.logout)

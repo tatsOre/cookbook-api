@@ -35,7 +35,7 @@ const RecipeSchema = new mongoose.Schema(
         ],
         instructions: [String],
         categories: { type: [Schema.Types.ObjectId], ref: 'Category' },
-        cuisine: { type: String, ref: 'Cuisine' },
+        cuisine: { type: Schema.Types.ObjectId, ref: 'Cuisine' },
         public: { type: Boolean, default: false },
         comments: String,
     },
@@ -56,20 +56,10 @@ RecipeSchema.pre('findOne', function (next) {
 })
 
 RecipeSchema.pre("find", function (next) {
-    this
-        .select("-ingredients -instructions -comments")
-        .populate('cuisine categories')
+    this.populate('cuisine categories')
     next()
 })
 
 const RecipeModel = mongoose.model("Recipe", RecipeSchema)
 
 module.exports = RecipeModel
-
-/*
-FIND MANY HOOK:
-.populate({
-        path: "author",
-        select: "_id name",
-    });
-*/
