@@ -30,6 +30,7 @@ exports.lookUpByEmail = async (req, res) => {
 exports.getCurrentUser = async (req, res) => {
     // const req.user._id will be the verified doc against jwt token
     const _id = req.user?._id || '624e14a6693762201a694070'
+    const { id: userID } = req.params || '624e14a6693762201a694070'
     const user = await User.findById(_id).select('name email avatar favorites')
     const recipes = await Recipe.countDocuments({ author: _id })
     const shopLists = await ShoppingList.countDocuments({ author: _id })
@@ -51,13 +52,13 @@ exports.getCurrentUser = async (req, res) => {
 exports.getCurrentUserRecipes = async (req, res) => {
     // const req.user._id will be the verified doc against jwt token
     // todo: add pagination
-    const _id = req.user?._id || '624e14a6693762201a694070'
+    const { id: userID } = req.params || '624e14a6693762201a694070'
 
     const docs = await Recipe
-        .find({ author: _id }).select('title photo updatedAt')
+        .find({ author: userID }).select('title photo updatedAt')
 
     res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: { user: _id, docs }
+        message: SUCCESS, data: { user: userID, docs }
     })
 };
 
@@ -68,16 +69,16 @@ exports.getCurrentUserRecipes = async (req, res) => {
 exports.getCurrentUserFavorites = async (req, res) => {
     // const req.user._id will be the verified doc against jwt token
     // todo: add pagination
-    const _id = req.user?._id || '624e14a6693762201a694070'
+    const { id: userID } = req.params || '624e14a6693762201a694070'
 
-    const doc = await User.findById(_id).populate({
+    const doc = await User.findById(userID).populate({
         path: 'favorites',
         select: 'title photo updatedAt',
         populate: [{ path: 'author', select: 'name' }]
     })
 
     res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: { user: _id, docs: doc.favorites }
+        message: SUCCESS, data: { user: userID, docs: doc.favorites }
     })
 };
 
@@ -88,12 +89,12 @@ exports.getCurrentUserFavorites = async (req, res) => {
 exports.getCurrentUserShopLists = async (req, res) => {
     // const req.user._id will be the verified doc against jwt token
     // todo: add pagination
-    const _id = req.user?._id || '624e14a6693762201a694070'
+    const { id: userID } = req.params || '624e14a6693762201a694070'
     // TODO: Populate title in Recipe field
-    const docs = await ShoppingList.find({ author: _id }).select('-author')
+    const docs = await ShoppingList.find({ author: userID }).select('-author')
 
     res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: { user: _id, docs }
+        message: SUCCESS, data: { user: userID, docs }
     })
 };
 
@@ -103,44 +104,43 @@ exports.getCurrentUserShopLists = async (req, res) => {
  * No Auth Required
  */
 exports.getUserProfile = async (req, res) => {
-    const _id = req.params.id || '624e14a6693762201a694070'
-    const doc = await User.findById(_id)
+    const { id: userID } = req.params || '624e14a6693762201a694070'
+
+    const doc = await User.findById(userID)
         .select("name about avatar")
 
-    const recipes = await Recipe.find({ author: _id, public: true })
+    const recipes = await Recipe.find({ author: userID, public: true })
         .select('title photo updatedAt')
 
     res.status(StatusCodes.OK).json({
         message: SUCCESS,
-        data: { _id, name: doc.name, recipes }
+        data: { _id: userID, name: doc.name, recipes }
     })
 };
 
-/** // TODO change route to /api/v1/me/update
- * PATCH /api/v1/user/:id/update
- * Update user.
+/**
+ * PATCH /api/v2/users/:id
  */
 exports.updateUser = async (req, res) => {
     // TODO change routes and params with passport authorization
-    const { id } = req.params;
-    const user = await UserModel.findOneAndUpdate({ _id: id }, req.body, {
+    const { id: userID } = req.params;
+    const user = await UserModel.findOneAndUpdate({ _id: userID }, req.body, {
         runValidators: true,
         new: true,
     });
 
-    res.json({ message: "Your profile information has been updated", user });
+    res.status(StatusCodes.OK).json({ message: SUCCESS })
 };
 
-/** TODO change route to /api/v1/me/delete
- * DELETE /api/v1/user/:id/delete
- * Delete user.
+/**
+ * DELETE /api/v2/users/:id/
  */
 exports.deleteUser = async (req, res) => {
     // TODO change routes and params with passport authorization
     const { id: userID } = req.params;
-    await RecipeModel.deleteMany({ author: userID });
-    await ShoppingListModel.deleteMany({ author: userID });
-    await UserModel.deleteOne({ _id: id });
+    await Recipe.deleteMany({ author: userID });
+    await ShoppingList.deleteMany({ author: userID });
+    await User.deleteOne({ _id: id });
 
     res.status(StatusCodes.OK).json({ message: SUCCESS });
 };

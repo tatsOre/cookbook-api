@@ -1,6 +1,9 @@
-const jwt = require("jsonwebtoken")
-const User = require('../ models/User')
+const JWT = require("../services/jwt")
+const { BadRequestError, UnauthenticatedError } = require('../errors')
+const { UNAUTHORIZED } = require('../errors/response-messages')
 
+const User = require('../ models/User')
+// Create message for auth/forbidden
 /**
  * @param {*} req 
  * @param {*} res 
@@ -10,15 +13,15 @@ const User = require('../ models/User')
 const authenticateBearerToken = async (req, res, next) => {
     const authHeader = req.headers.authorization
     if (!authHeader || !authHeader.startsWith('Bearer')) {
-        throw new Error('Unauthenticated')
+        throw new UnauthenticatedError(UNAUTHORIZED)
     }
     const token = authHeader.split(' ')[1]
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET)
+        const payload = JWT.verify(token)
         req.user = payload.user
         next()
-    } catch (error) {
-        throw new Error('Unauthenticated')
+    } catch {
+        throw new UnauthenticatedError(UNAUTHORIZED)
     }
 }
 

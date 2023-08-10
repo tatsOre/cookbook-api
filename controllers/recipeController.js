@@ -19,8 +19,10 @@ exports.findDocument = async (req, res, next) => {
  * Admin level only
  */
 exports.getAllRecipes = async (req, res) => {
+    console.log(req.cookies, 'cookies')
+    console.log(req.cookies[process.env.COOKIE_SECRET], 'foodie cookie')
     const docs = await Recipe.find({})
-    res.status(StatusCodes.OK).json({ count: docs.length, items: docs })
+    res.status(StatusCodes.OK).json({ count: docs.length, data: docs })
 }
 
 /**  POST /api/v2/recipe  */
@@ -65,7 +67,8 @@ exports.updateRecipe = async (req, res) => {
  */
 exports.deleteRecipe = async (req, res) => {
     // Check recipe owner author: req.author
-    await Recipe.findByIdAndDelete({ _id: req.params.id })
+    console.log(req.params)
+   await Recipe.findByIdAndDelete({ _id: req.params.id })
     res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 
@@ -83,9 +86,9 @@ exports.getRecipesByQuery = async (req, res) => {
     res.json(recipes)
 }
 
-/**
- * GET /api/v1/recipes/latest
- */
+/**  GET /api/v2/recipes?sort=asc
+ * GET /api/v2/recipes?sort=:value
+ */ // filter by query, sort (date)
 exports.getLatestRecipes = async (req, res) => {
     const page = parseInt(req.query.page) || 1
     const limit = parseInt(req.query.limit) || 6

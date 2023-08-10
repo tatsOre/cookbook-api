@@ -19,6 +19,7 @@ module.exports = app => {
         recipe.findDocument,
         recipe.updateRecipe
     )
+
     app.delete(
         "/api/v2/recipes/:id",
         recipe.findDocument,
