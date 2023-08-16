@@ -19,8 +19,6 @@ exports.findDocument = async (req, res, next) => {
  * Admin level only
  */
 exports.getAllRecipes = async (req, res) => {
-    console.log(req.cookies, 'cookies')
-    console.log(req.cookies[process.env.COOKIE_SECRET], 'foodie cookie')
     const docs = await Recipe.find({})
     res.status(StatusCodes.OK).json({ count: docs.length, data: docs })
 }

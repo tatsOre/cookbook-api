@@ -1,8 +1,9 @@
 const JWT = require("../services/jwt")
-const { BadRequestError, UnauthenticatedError } = require('../errors')
-const { UNAUTHORIZED } = require('../errors/response-messages')
+const { UnauthenticatedError, NotFoundError } = require('../errors')
+const { UNAUTHORIZED, NOT_FOUND } = require('../errors/response-messages')
 
-const User = require('../ models/User')
+const User = require('../models/User')
+
 // Create message for auth/forbidden
 /**
  * @param {*} req 
@@ -10,19 +11,25 @@ const User = require('../ models/User')
  * @param {*} next 
  */
 
-const authenticateBearerToken = async (req, res, next) => {
+const authenticateUserToken = async (req, res, next) => {
     const authHeader = req.headers.authorization
+
     if (!authHeader || !authHeader.startsWith('Bearer')) {
-        throw new UnauthenticatedError(UNAUTHORIZED)
+        UnauthenticatedError(UNAUTHORIZED)
     }
     const token = authHeader.split(' ')[1]
-    try {
-        const payload = JWT.verify(token)
-        req.user = payload.user
-        next()
-    } catch {
-        throw new UnauthenticatedError(UNAUTHORIZED)
-    }
+
+    const decoded = JWT.verify(token)
+
+    if (!token || !decoded) throw new UnauthenticatedError(UNAUTHORIZED)
+
+    const user = await User.findById(decoded.user._id)
+
+    if (!user) throw new NotFoundError(NOT_FOUND.USER_NOT_FOUND)
+
+    req.user = user
+
+    next()
 }
 
-module.exports = { authenticateBearerToken }
+module.exports = { authenticateUserToken }

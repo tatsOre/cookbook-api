@@ -28,12 +28,11 @@ exports.lookUpByEmail = async (req, res) => {
  * Retrieve user profile information.
  */
 exports.getCurrentUser = async (req, res) => {
-    // const req.user._id will be the verified doc against jwt token
-    const _id = req.user?._id || '624e14a6693762201a694070'
-    const { id: userID } = req.params || '624e14a6693762201a694070'
-    const user = await User.findById(_id).select('name email avatar favorites')
-    const recipes = await Recipe.countDocuments({ author: _id })
-    const shopLists = await ShoppingList.countDocuments({ author: _id })
+    const userID = req.user?._id
+    const user = await User.findById(userID)
+        .select('name email avatar favorites')
+    const recipes = await Recipe.countDocuments({ author: userID })
+    const shopLists = await ShoppingList.countDocuments({ author: userID })
 
     const data = {
         ...user._doc,
@@ -50,9 +49,7 @@ exports.getCurrentUser = async (req, res) => {
  * Retrieve current user recipes populated
  */
 exports.getCurrentUserRecipes = async (req, res) => {
-    // const req.user._id will be the verified doc against jwt token
-    // todo: add pagination
-    const { id: userID } = req.params || '624e14a6693762201a694070'
+    const userID = req.user?._id
 
     const docs = await Recipe
         .find({ author: userID }).select('title photo updatedAt')
@@ -67,9 +64,7 @@ exports.getCurrentUserRecipes = async (req, res) => {
  * Retrieve current user favorites/saved recipes populated
  */
 exports.getCurrentUserFavorites = async (req, res) => {
-    // const req.user._id will be the verified doc against jwt token
-    // todo: add pagination
-    const { id: userID } = req.params || '624e14a6693762201a694070'
+    const userID = req.user?._id
 
     const doc = await User.findById(userID).populate({
         path: 'favorites',
@@ -87,9 +82,7 @@ exports.getCurrentUserFavorites = async (req, res) => {
  * Retrieve current user shopping lists documents
  */
 exports.getCurrentUserShopLists = async (req, res) => {
-    // const req.user._id will be the verified doc against jwt token
-    // todo: add pagination
-    const { id: userID } = req.params || '624e14a6693762201a694070'
+    const userID = req.user?._id
     // TODO: Populate title in Recipe field
     const docs = await ShoppingList.find({ author: userID }).select('-author')
 
@@ -104,7 +97,7 @@ exports.getCurrentUserShopLists = async (req, res) => {
  * No Auth Required
  */
 exports.getUserProfile = async (req, res) => {
-    const { id: userID } = req.params || '624e14a6693762201a694070'
+    const userID = req.user?._id
 
     const doc = await User.findById(userID)
         .select("name about avatar")
@@ -122,8 +115,8 @@ exports.getUserProfile = async (req, res) => {
  * PATCH /api/v2/users/:id
  */
 exports.updateUser = async (req, res) => {
-    // TODO change routes and params with passport authorization
-    const { id: userID } = req.params;
+    const userID = req.user?._id
+    
     const user = await UserModel.findOneAndUpdate({ _id: userID }, req.body, {
         runValidators: true,
         new: true,
