@@ -19,15 +19,16 @@ exports.findDocument = async (req, res, next) => {
  * Admin level only
  */
 exports.getAllRecipes = async (req, res) => {
+
     const docs = await Recipe.find({})
     res.status(StatusCodes.OK).json({ count: docs.length, data: docs })
 }
 
 /**  POST /api/v2/recipe  */
 exports.createRecipe = async (req, res) => {
-    //req.body.author = req.user._id;
+    req.body.author = req.user?._id || "624e14a6693762201a694070";
     const doc = await Recipe.create({ ...req.body })
-    res.status(StatusCodes.CREATED).send({ message: SUCCESS, id: doc._id })
+    res.status(StatusCodes.CREATED).json({ message: SUCCESS, id: doc._id })
 }
 
 /**  GET /api/v2/recipe/:id  */
@@ -45,7 +46,7 @@ exports.getRecipe = async (req, res) => {
             }
         }
      */
-    res.status(StatusCodes.OK).json({ message: SUCCESS, data: req.recipe})
+    res.status(StatusCodes.OK).json({ message: SUCCESS, data: req.recipe })
 }
 
 /**  PATCH /api/v2/recipe/:id  */
@@ -57,7 +58,7 @@ exports.updateRecipe = async (req, res) => {
         { runValidators: true }
     )
 
-    res.status(StatusCodes.OK).send({ message: SUCCESS, id: doc._id })
+    res.status(StatusCodes.OK).json({ message: SUCCESS, id: doc._id })
 }
 
 /**
@@ -65,9 +66,25 @@ exports.updateRecipe = async (req, res) => {
  */
 exports.deleteRecipe = async (req, res) => {
     // Check recipe owner author: req.author
-    console.log(req.params)
-   await Recipe.findByIdAndDelete({ _id: req.params.id })
+    //console.log(req.params)
+    await Recipe.findByIdAndDelete({ _id: req.params.id })
     res.status(StatusCodes.OK).send({ message: SUCCESS })
+}
+
+/**
+ * 
+ * GET /recipes/publish/:id
+ */
+
+exports.toggleRecipePrivacy = async (req, res) => {
+    req.recipe.public = !req.recipe.public
+    req.recipe.save()
+    res.status(StatusCodes.OK).json({
+        message: SUCCESS, data: {
+            _id: req.recipe._id,
+            public: req.recipe.public
+        }
+    })
 }
 
 /**

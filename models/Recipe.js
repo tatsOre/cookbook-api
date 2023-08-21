@@ -56,7 +56,11 @@ RecipeSchema.pre('findOne', function (next) {
 })
 
 RecipeSchema.pre("find", function (next) {
-    this.populate('cuisine categories')
+    this.populate('cuisine categories').populate({
+        path: "author",
+        select: "name",
+      });
+
     next()
 })
 

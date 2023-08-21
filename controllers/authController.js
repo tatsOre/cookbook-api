@@ -56,7 +56,7 @@ const setAuthJWTCookie = (req, res) => {
     const payload = req.user && req.user.toAuthObject()
 
     const token = JWT.sign(payload)
-
+    console.log(token)
     res.status(StatusCodes.OK)
         .cookie(process.env.COOKIE_SECRET, token, {
             expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days

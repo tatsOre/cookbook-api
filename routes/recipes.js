@@ -10,20 +10,22 @@ module.exports = app => {
 
     app.get(
         "/api/v2/recipes/:id",
-        recipe.findDocument,
-        recipe.getRecipe
+        recipe.findDocument, recipe.getRecipe
+    )
+
+    app.get(
+        "/api/v2/recipes/publish/:id",
+        recipe.findDocument, recipe.toggleRecipePrivacy
     )
 
     app.patch(
         "/api/v2/recipes/:id",
-        recipe.findDocument,
-        recipe.updateRecipe
+        recipe.findDocument, recipe.updateRecipe
     )
 
     app.delete(
         "/api/v2/recipes/:id",
-        recipe.findDocument,
-        recipe.deleteRecipe
+        recipe.findDocument, recipe.deleteRecipe
     )
 }
 
