@@ -62,7 +62,7 @@ const setAuthJWTCookie = (req, res) => {
             expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
             httpOnly: true,
             sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
-            secure: process.env.NODE_ENV === "production"
+            secure: process.env.NODE_ENV === "development" ? false : true
         })
         .send({ message: SUCCESS })
 }

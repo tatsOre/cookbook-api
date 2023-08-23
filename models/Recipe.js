@@ -51,7 +51,8 @@ RecipeSchema.pre('findOne', function (next) {
             { path: 'fraction', model: 'Fraction' },
             { path: 'measure', model: 'Measure' }
         ]
-    })
+    }).populate({ path: "author", select: "name" })
+
     next()
 })
 
@@ -59,7 +60,7 @@ RecipeSchema.pre("find", function (next) {
     this.populate('cuisine categories').populate({
         path: "author",
         select: "name",
-      });
+    })
 
     next()
 })
