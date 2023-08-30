@@ -1,24 +1,24 @@
 const user = require("../controllers/userController");
-const { authenticateUserToken } = require("../middleware/authentication");
+const { authenticateUserCookieToken } = require("../middleware/authentication");
 
 module.exports = app => {
     app.get('/api/v2/users/me',
-        authenticateUserToken,
+        authenticateUserCookieToken,
         user.getCurrentUser
     )
 
     app.get('/api/v2/users/me/recipes',
-        authenticateUserToken,
+        authenticateUserCookieToken,
         user.getCurrentUserRecipes
     )
 
     app.get('/api/v2/users/me/favorites',
-        authenticateUserToken,
+        authenticateUserCookieToken,
         user.getCurrentUserFavorites
     )
 
     app.get('/api/v2/users/:id/profile',
-        authenticateUserToken,
+        authenticateUserCookieToken,
         user.getUserProfile
     )
 

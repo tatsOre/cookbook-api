@@ -32,16 +32,17 @@ exports.getCurrentUser = async (req, res) => {
     const user = await User.findById(userID)
         .select('name email avatar favorites')
     const recipes = await Recipe.countDocuments({ author: userID })
-    const shopLists = await ShoppingList.countDocuments({ author: userID })
+    const shoppLists = await ShoppingList.countDocuments({ author: userID })
 
     const data = {
         ...user._doc,
         recipes,
         favorites: user.favorites.length,
-        shoppingLists: shopLists
+        shoppingLists: shoppLists,
+        isLoggedIn: true
     }
 
-    res.status(StatusCodes.OK).json({ message: SUCCESS, data })
+    res.status(StatusCodes.OK).json(data)
 };
 
 /**
@@ -66,11 +67,8 @@ exports.getCurrentUserRecipes = async (req, res) => {
 exports.getCurrentUserFavorites = async (req, res) => {
     const userID = req.user?._id
 
-    const doc = await User.findById(userID).populate({
-        path: 'favorites',
-        select: 'title photo updatedAt',
-        populate: [{ path: 'author', select: 'name' }]
-    })
+    const doc = await User.findById(userID)
+        .select('favorites').populate('favorites')
 
     res.status(StatusCodes.OK).json({
         message: SUCCESS, data: { user: userID, docs: doc.favorites }
@@ -116,7 +114,7 @@ exports.getUserProfile = async (req, res) => {
  */
 exports.updateUser = async (req, res) => {
     const userID = req.user?._id
-    
+
     const user = await UserModel.findOneAndUpdate({ _id: userID }, req.body, {
         runValidators: true,
         new: true,
