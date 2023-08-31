@@ -2,33 +2,32 @@ const mongoose = require("mongoose")
 const { StatusCodes } = require('http-status-codes')
 const { NotFoundError, UnauthorizedError } = require("../errors")
 const { NOT_FOUND, SUCCESS } = require("../errors/response-messages")
+
 const Recipe = mongoose.model("Recipe")
 
 exports.findDocument = async (req, res, next) => {
     const doc = await Recipe.findOne({ _id: req.params.id })
-    if (doc) {
-        req.recipe = doc
-        next()
-    } else {
+    if (!doc)
         throw new NotFoundError(NOT_FOUND.RESOURCE_NOT_FOUND(req.params.id))
-    }
+
+    req.recipe = doc
+    next()
 }
 
 /**  
  * GET /api/v2/recipes  
- * Admin level only
+ * Admin level only //"624e14a6693762201a694070"
  */
 exports.getAllRecipes = async (req, res) => {
-    //"624e14a6693762201a694070"
     const docs = await Recipe.find({})
-    res.status(StatusCodes.OK).json({ count: docs.length, data: docs })
+    res.status(StatusCodes.OK).json({ count: docs.length, docs: docs })
 }
 
 /**  POST /api/v2/recipe  */
 exports.createRecipe = async (req, res) => {
     req.body.author = req.user?._id
     const doc = await Recipe.create({ ...req.body })
-    res.status(StatusCodes.CREATED).json({ message: SUCCESS, id: doc._id })
+    res.status(StatusCodes.CREATED).json({ doc: doc._id })
 }
 
 /**  GET /api/v2/recipe/:id  */
@@ -46,25 +45,16 @@ exports.getRecipe = async (req, res) => {
             }
         }
      */
-    res.status(StatusCodes.OK).json({ message: SUCCESS, data: req.recipe })
+    res.status(StatusCodes.OK).json({ doc: req.recipe })
 }
 
 /**  PATCH /api/v2/recipe/:id  */
 exports.updateRecipe = async (req, res) => {
-    const authenticatedUser = req.user._id
-    const { author } = req.body
-
-    if (author._id !== authenticatedUser.toString()) {
-        throw new UnauthorizedError()
-    }
-
     const doc = await Recipe.findOneAndUpdate(
-        { _id: req.params.id },
-        req.body,
-        { runValidators: true }
+        { _id: req.params.id }, req.body, { runValidators: true }
     )
 
-    res.status(StatusCodes.OK).json({ message: SUCCESS, id: doc._id })
+    res.status(StatusCodes.OK).json({ doc: doc._id })
 }
 
 /**
@@ -76,7 +66,7 @@ exports.deleteRecipe = async (req, res) => {
 }
 
 /**
- * 
+ * Toggles recipe privacy
  * GET /recipes/publish/:id
  */
 
@@ -84,10 +74,8 @@ exports.updateRecipePrivacy = async (req, res) => {
     req.recipe.public = !req.recipe.public
     req.recipe.save()
     res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: {
-            _id: req.recipe._id,
-            public: req.recipe.public
-        }
+        doc: req.recipe._id,
+        public: req.recipe.public
     })
 }
 

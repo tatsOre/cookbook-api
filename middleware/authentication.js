@@ -1,6 +1,10 @@
 const JWT = require("../services/jwt")
-const { UnauthenticatedError, NotFoundError, UnauthorizedError } = require('../errors')
-const { UNAUTHORIZED, NOT_FOUND } = require('../errors/response-messages')
+const {
+    UnauthenticatedError, NotFoundError, UnauthorizedError
+} = require('../errors')
+const {
+    FORBIDDEN, UNAUTHORIZED, NOT_FOUND
+} = require('../errors/response-messages')
 
 const User = require('../models/User')
 
@@ -34,9 +38,11 @@ const authenticateUserBearerToken = async (req, res, next) => {
 const authenticateUserCookieToken = async (req, res, next) => {
     const token = req.cookies[process.env.COOKIE_SECRET]
 
+    if (!token) throw new UnauthenticatedError(UNAUTHORIZED)
+
     const decoded = JWT.verify(token)
 
-    if (!token || !decoded) throw new UnauthorizedError(UNAUTHORIZED)
+    if (!decoded) throw new UnauthorizedError(UNAUTHORIZED)
 
     const user = await User.findById(decoded.user._id)
 
@@ -47,7 +53,20 @@ const authenticateUserCookieToken = async (req, res, next) => {
     next()
 }
 
-module.exports = { 
+const verifyAuthorization = async (req, res, next) => {
+    const authenticatedUser = req.user._id.toString()
+
+    const author = req.recipe.author._id.toString()
+
+    if (!author || author !== authenticatedUser) {
+        throw new UnauthorizedError(FORBIDDEN)
+    }
+
+    next()
+}
+
+module.exports = {
     authenticateUserBearerToken,
-    authenticateUserCookieToken
- }
+    authenticateUserCookieToken,
+    verifyAuthorization
+}

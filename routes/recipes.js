@@ -1,38 +1,42 @@
 const recipe = require("../controllers/recipeController");
-const { authenticateUserCookieToken } = require("../middleware/authentication");
+const auth = require("../middleware/authentication");
 
 module.exports = app => {
     app.get("/api/v2/recipes", recipe.getAllRecipes)
 
     app.post(
         '/api/v2/recipes',
-        authenticateUserCookieToken,
+        auth.authenticateUserCookieToken,
         recipe.createRecipe
     )
 
     app.get(
         "/api/v2/recipes/:id",
-        recipe.findDocument, 
+        recipe.findDocument,
         recipe.getRecipe
     )
 
     app.get(
         "/api/v2/recipes/publish/:id",
-        recipe.findDocument, 
+        auth.authenticateUserCookieToken,
+        recipe.findDocument,
+        auth.verifyAuthorization,
         recipe.updateRecipePrivacy
     )
 
     app.patch(
         "/api/v2/recipes/:id",
-        authenticateUserCookieToken,
+        auth.authenticateUserCookieToken,
         recipe.findDocument,
+        auth.verifyAuthorization,
         recipe.updateRecipe
     )
 
     app.delete(
         "/api/v2/recipes/:id",
-        authenticateUserCookieToken,
+        auth.authenticateUserCookieToken,
         recipe.findDocument,
+        auth.verifyAuthorization,
         recipe.deleteRecipe
     )
 }
