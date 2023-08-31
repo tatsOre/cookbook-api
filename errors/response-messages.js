@@ -2,6 +2,7 @@ module.exports = {
     SUCCESS: "Success",
     FAILURE: "Failure",
     UNAUTHORIZED: "Unauthorized", // missing/wrong token,
+    FORBIDDEN: "Forbidden",
     NOT_FOUND: {
         DEFAULT: "Not Found",
         USER_NOT_FOUND: "Sorry, we don't recognize this account.",

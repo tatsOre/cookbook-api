@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 const { StatusCodes } = require('http-status-codes')
-const { NotFoundError } = require("../errors")
+const { NotFoundError, UnauthorizedError } = require("../errors")
 const { NOT_FOUND, SUCCESS } = require("../errors/response-messages")
 const Recipe = mongoose.model("Recipe")
 
@@ -19,14 +19,14 @@ exports.findDocument = async (req, res, next) => {
  * Admin level only
  */
 exports.getAllRecipes = async (req, res) => {
-
+    //"624e14a6693762201a694070"
     const docs = await Recipe.find({})
     res.status(StatusCodes.OK).json({ count: docs.length, data: docs })
 }
 
 /**  POST /api/v2/recipe  */
 exports.createRecipe = async (req, res) => {
-    req.body.author = req.user?._id || "624e14a6693762201a694070";
+    req.body.author = req.user?._id
     const doc = await Recipe.create({ ...req.body })
     res.status(StatusCodes.CREATED).json({ message: SUCCESS, id: doc._id })
 }
@@ -51,7 +51,13 @@ exports.getRecipe = async (req, res) => {
 
 /**  PATCH /api/v2/recipe/:id  */
 exports.updateRecipe = async (req, res) => {
-    // Check recipe owner author: req.author
+    const authenticatedUser = req.user._id
+    const { author } = req.body
+
+    if (author._id !== authenticatedUser.toString()) {
+        throw new UnauthorizedError()
+    }
+
     const doc = await Recipe.findOneAndUpdate(
         { _id: req.params.id },
         req.body,
@@ -65,8 +71,6 @@ exports.updateRecipe = async (req, res) => {
  * DELETE /api/v1/recipe/:id
  */
 exports.deleteRecipe = async (req, res) => {
-    // Check recipe owner author: req.author
-    //console.log(req.params)
     await Recipe.findByIdAndDelete({ _id: req.params.id })
     res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
@@ -76,7 +80,7 @@ exports.deleteRecipe = async (req, res) => {
  * GET /recipes/publish/:id
  */
 
-exports.toggleRecipePrivacy = async (req, res) => {
+exports.updateRecipePrivacy = async (req, res) => {
     req.recipe.public = !req.recipe.public
     req.recipe.save()
     res.status(StatusCodes.OK).json({
