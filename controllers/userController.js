@@ -55,9 +55,7 @@ exports.getCurrentUserRecipes = async (req, res) => {
     const docs = await Recipe
         .find({ author: userID }).select('title photo updatedAt public')
 
-    res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: { user: userID, docs }
-    })
+    res.status(StatusCodes.OK).json({ user: userID, docs })
 };
 
 /**
@@ -70,9 +68,7 @@ exports.getCurrentUserFavorites = async (req, res) => {
     const doc = await User.findById(userID)
         .select('favorites').populate('favorites')
 
-    res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: { user: userID, docs: doc.favorites }
-    })
+    res.status(StatusCodes.OK).json({ user: userID, docs: doc.favorites })
 };
 
 /**
@@ -84,9 +80,7 @@ exports.getCurrentUserShopLists = async (req, res) => {
     // TODO: Populate title in Recipe field
     const docs = await ShoppingList.find({ author: userID }).select('-author')
 
-    res.status(StatusCodes.OK).json({
-        message: SUCCESS, data: { user: userID, docs }
-    })
+    res.status(StatusCodes.OK).json({ user: userID, docs })
 };
 
 /**
