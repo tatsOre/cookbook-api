@@ -56,7 +56,7 @@ const setAuthJWTCookie = (req, res) => {
     const payload = req.user && req.user.toAuthObject()
 
     const token = JWT.sign(payload)
-    console.log(token)
+
     res.status(StatusCodes.OK)
         .cookie(process.env.COOKIE_SECRET, token, {
             expires: new Date(Date.now() + 7 * 24 * 3600000), // 7 days
@@ -71,7 +71,13 @@ const setAuthJWTCookie = (req, res) => {
  * GET /api/v2/auth/logout
  */
 const logout = async (req, res) => {
-    res.status(StatusCodes.OK).send({ message: SUCCESS })
+    res.clearCookie(process.env.COOKIE_SECRET, {
+        expires: new Date(0),
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
+        secure: process.env.NODE_ENV === "development" ? false : true,
+      });
+      res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 
 module.exports = { register, login, logout, setAuthJWTCookie }

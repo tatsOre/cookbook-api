@@ -37,7 +37,7 @@ exports.getCurrentUser = async (req, res) => {
     const data = {
         ...user._doc,
         recipes,
-        favorites: user.favorites.length,
+        favorites: user.favorites,
         shoppingLists: shoppLists,
         isLoggedIn: true
     }
@@ -53,7 +53,7 @@ exports.getCurrentUserRecipes = async (req, res) => {
     const userID = req.user?._id
 
     const docs = await Recipe
-        .find({ author: userID }).select('title photo updatedAt')
+        .find({ author: userID }).select('title photo updatedAt public')
 
     res.status(StatusCodes.OK).json({
         message: SUCCESS, data: { user: userID, docs }
