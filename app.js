@@ -41,7 +41,7 @@ require('./routes/users')(app)
 require('./routes/assets')(app)
 
 // catch 404 and forward to error handler
-app.use((req, res) => res.status(404).send('Route does not exist'))
+app.use((req, res) => res.status(404).json({ message: 'Route does not exist'}))
 
 // Handle errors
 app.use(errorHandlerMiddleware)

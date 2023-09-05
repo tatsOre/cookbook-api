@@ -118,6 +118,26 @@ exports.updateUser = async (req, res) => {
 };
 
 /**
+ * PATCH /api/v2/users/me/favorites/:id
+ * Add/Remove a recipe to/from user favorites.
+ */
+exports.updateUserFavorites = async (req, res) => {
+    const recipeId = req.params.id
+    const favorites = req.user.favorites.map((obj) => obj.toString());
+    const operator = favorites.includes(recipeId) ? "$pull" : "$addToSet";
+
+    console.log(favorites.includes(recipeId), operator)
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { [operator]: { favorites: recipeId } },
+        { new: true}
+    );
+
+    res.status(StatusCodes.OK).json({ message: SUCCESS });
+};
+
+/**
  * DELETE /api/v2/users/:id/
  */
 exports.deleteUser = async (req, res) => {
@@ -130,21 +150,7 @@ exports.deleteUser = async (req, res) => {
     res.status(StatusCodes.OK).json({ message: SUCCESS });
 };
 
-/**
- * POST /api/v1/me/favorites
- * Add/Remove a recipe to/from user favorites.
- */
-exports.updateFavorites = async (req, res) => {
-    const favorites = req.user.favorites.map((obj) => obj.toString());
-    const operator = favorites.includes(req.body.recipe) ? "$pull" : "$addToSet";
-    const user = await UserModel.findByIdAndUpdate(
-        req.user._id,
-        { [operator]: { favorites: req.body.recipe } },
-        { new: true }
-    );
 
-    return res.json(user);
-};
 
 /**
  * GET /api/v1/me/search?field=:field&q=:queryParam

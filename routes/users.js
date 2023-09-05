@@ -17,6 +17,11 @@ module.exports = app => {
         user.getCurrentUserFavorites
     )
 
+    app.patch('/api/v2/users/me/favorites/:id',
+        authenticateUserCookieToken,
+        user.updateUserFavorites
+    )
+
     app.get('/api/v2/users/:id/profile',
         authenticateUserCookieToken,
         user.getUserProfile

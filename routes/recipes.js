@@ -16,7 +16,7 @@ module.exports = app => {
         recipe.getRecipe
     )
 
-    app.get(
+    app.patch(
         "/api/v2/recipes/publish/:id",
         auth.authenticateUserCookieToken,
         recipe.findDocument,
