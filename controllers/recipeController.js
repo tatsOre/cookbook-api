@@ -11,6 +11,7 @@ exports.findDocument = async (req, res, next) => {
         throw new NotFoundError(NOT_FOUND.RESOURCE_NOT_FOUND(req.params.id))
 
     req.recipe = doc
+
     next()
 }
 
@@ -50,9 +51,11 @@ exports.getRecipe = async (req, res) => {
 
 /**  PATCH /api/v2/recipe/:id  */
 exports.updateRecipe = async (req, res) => {
+    console.log('updage')
     const doc = await Recipe.findOneAndUpdate(
         { _id: req.params.id }, req.body, { runValidators: true }
     )
+    console.log(doc)
 
     res.status(StatusCodes.OK).json({ doc: doc._id })
 }

@@ -53,7 +53,7 @@ exports.getCurrentUserRecipes = async (req, res) => {
     const userID = req.user?._id
 
     const docs = await Recipe
-        .find({ author: userID }).select('title photo updatedAt public')
+        .find({ author: userID }).select('title photo createdAt updatedAt public')
 
     res.status(StatusCodes.OK).json({ user: userID, docs })
 };
@@ -123,19 +123,17 @@ exports.updateUser = async (req, res) => {
  */
 exports.updateUserFavorites = async (req, res) => {
     const recipeId = req.params.id
-    const favorites = req.user.favorites.map((obj) => obj.toString());
-    const operator = favorites.includes(recipeId) ? "$pull" : "$addToSet";
+    const favorites = req.user.favorites.map((obj) => obj.toString())
+    const operator = favorites.includes(recipeId) ? "$pull" : "$addToSet"
 
-    console.log(favorites.includes(recipeId), operator)
-
-    const user = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
         req.user._id,
         { [operator]: { favorites: recipeId } },
         { new: true}
-    );
+    )
 
-    res.status(StatusCodes.OK).json({ message: SUCCESS });
-};
+    res.status(StatusCodes.OK).json({ message: SUCCESS })
+}
 
 /**
  * DELETE /api/v2/users/:id/
