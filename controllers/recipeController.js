@@ -51,12 +51,11 @@ exports.getRecipe = async (req, res) => {
 
 /**  PATCH /api/v2/recipe/:id  */
 exports.updateRecipe = async (req, res) => {
-    console.log('updage')
+    // Should I add a layer of protection with author?
     const doc = await Recipe.findOneAndUpdate(
         { _id: req.params.id }, req.body, { runValidators: true }
     )
-    console.log(doc)
-
+    
     res.status(StatusCodes.OK).json({ doc: doc._id })
 }
 
@@ -64,6 +63,7 @@ exports.updateRecipe = async (req, res) => {
  * DELETE /api/v1/recipe/:id
  */
 exports.deleteRecipe = async (req, res) => {
+    // Should I add a layer of protection with author?
     await Recipe.findByIdAndDelete({ _id: req.params.id })
     res.status(StatusCodes.OK).send({ message: SUCCESS })
 }

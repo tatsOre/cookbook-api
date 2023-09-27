@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const { StatusCodes } = require('http-status-codes')
-const { BadRequestError } = require("../errors");
+const { BadRequestError, UnauthorizedError } = require("../errors");
 const {
-    INVALID_FORMAT, SUCCESS, FAILURE
+    INVALID_FORMAT, SUCCESS, FAILURE, UNAUTHORIZED
 } = require("../errors/response-messages")
 
 const User = mongoose.model("User");
@@ -28,17 +28,20 @@ exports.lookUpByEmail = async (req, res) => {
  * Retrieve user profile information.
  */
 exports.getCurrentUser = async (req, res) => {
-    const userID = req.user?._id
-    const user = await User.findById(userID)
-        .select('name email avatar favorites')
-    const recipes = await Recipe.countDocuments({ author: userID })
-    const shoppLists = await ShoppingList.countDocuments({ author: userID })
+    const { name, email, about, avatar, favorites, _id } = req.user
+
+    const recipes = await Recipe.countDocuments({ author: _id })
+    const shoppingLists = await ShoppingList.countDocuments({ author: _id })
 
     const data = {
-        ...user._doc,
+        _id,
+        name,
+        about,
+        avatar,
+        email,
         recipes,
-        favorites: user.favorites,
-        shoppingLists: shoppLists,
+        favorites,
+        shoppingLists,
         isLoggedIn: true
     }
 
@@ -129,7 +132,7 @@ exports.updateUserFavorites = async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         { [operator]: { favorites: recipeId } },
-        { new: true}
+        { new: true }
     )
 
     res.status(StatusCodes.OK).json({ message: SUCCESS })
@@ -139,16 +142,19 @@ exports.updateUserFavorites = async (req, res) => {
  * DELETE /api/v2/users/:id/
  */
 exports.deleteUser = async (req, res) => {
-    // TODO change routes and params with passport authorization
-    const { id: userID } = req.params;
-    await Recipe.deleteMany({ author: userID });
-    await ShoppingList.deleteMany({ author: userID });
-    await User.deleteOne({ _id: id });
+    const userID = req.user?._id
 
-    res.status(StatusCodes.OK).json({ message: SUCCESS });
-};
+    // Logged in user is dif from request id
+    if (userID.toString() !== req.params.id) {
+        throw new UnauthorizedError(UNAUTHORIZED)
+    }
 
+    await Recipe.deleteMany({ author: userID })
+    await ShoppingList.deleteMany({ author: userID })
+    await User.deleteOne({ _id: userID })
 
+    return res.status(StatusCodes.OK).send({ message: SUCCESS })
+}
 
 /**
  * GET /api/v1/me/search?field=:field&q=:queryParam

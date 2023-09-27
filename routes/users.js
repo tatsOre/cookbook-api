@@ -31,4 +31,10 @@ module.exports = app => {
         '/api/v2/users/lookup-email',
         user.lookUpByEmail
     )
+
+    app.delete(
+        '/api/v2/users/:id',
+        authenticateUserCookieToken,
+        user.deleteUser
+    )
 }
