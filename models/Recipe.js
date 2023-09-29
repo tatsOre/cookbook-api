@@ -22,7 +22,10 @@ const RecipeSchema = new mongoose.Schema(
             trim: true,
             maxLength: 100,
         },
-        photo: String,
+        photo: {
+            url: String,
+            public_id: String
+        },
         servings: { type: Number, default: 0 },
         ingredients: [
             {

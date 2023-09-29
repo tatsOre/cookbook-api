@@ -52,10 +52,11 @@ exports.getRecipe = async (req, res) => {
 /**  PATCH /api/v2/recipe/:id  */
 exports.updateRecipe = async (req, res) => {
     // Should I add a layer of protection with author?
+
     const doc = await Recipe.findOneAndUpdate(
         { _id: req.params.id }, req.body, { runValidators: true }
     )
-    
+
     res.status(StatusCodes.OK).json({ doc: doc._id })
 }
 
