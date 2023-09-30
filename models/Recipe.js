@@ -18,7 +18,7 @@ const RecipeSchema = new mongoose.Schema(
         description: String,
         mainIngredient: {
             type: String,
-            required: [true, "Main ingredient is required."],
+            //required: [true, "Main ingredient is required."],
             trim: true,
             maxLength: 100,
         },
