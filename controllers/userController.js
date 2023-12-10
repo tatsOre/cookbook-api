@@ -19,7 +19,7 @@ exports.lookUpByEmail = async (req, res) => {
     res.status(StatusCodes.OK).json({
         message: doc ? SUCCESS : FAILURE,
         displayName: email,
-        emailExist: doc ? true : false
+        userExists: doc ? true : false
     })
 }
 
