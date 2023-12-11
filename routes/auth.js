@@ -3,7 +3,8 @@ const auth = require("../controllers/authController");
 module.exports = app => {
     app.post(
         "/api/v2/auth/register",
-        auth.register
+        auth.register,
+        auth.setAuthJWTCookie
     )
 
     app.post(

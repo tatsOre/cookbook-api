@@ -20,7 +20,7 @@ exports.findDocument = async (req, res, next) => {
  * Admin level only //"624e14a6693762201a694070"
  */
 exports.getAllRecipes = async (req, res) => {
-    const docs = await Recipe.find({})
+    const docs = await Recipe.find({ public: true})
     res.status(StatusCodes.OK).json({ count: docs.length, docs: docs })
 }
 

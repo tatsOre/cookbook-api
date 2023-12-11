@@ -11,7 +11,7 @@ const User = require("../models/User");
  * POST /api/v2/auth/register
  * Registers user in DB.
  */
-const register = async (req, res) => {
+const register = async (req, res, next) => {
     const { email, password } = req.body
 
     if (!email || !password) {
@@ -24,7 +24,8 @@ const register = async (req, res) => {
     }
     user = await User.create({ email, password })
 
-    res.status(StatusCodes.CREATED).send({ message: SUCCESS })
+    req.user = user
+    next()
 }
 
 /**
@@ -64,7 +65,7 @@ const setAuthJWTCookie = (req, res) => {
             sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
             secure: process.env.NODE_ENV === "development" ? false : true
         })
-        .send({ message: SUCCESS })
+        .json({ user: req.user })
 }
 
 /**
@@ -76,8 +77,8 @@ const logout = async (req, res) => {
         httpOnly: true,
         sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
         secure: process.env.NODE_ENV === "development" ? false : true,
-      });
-      res.status(StatusCodes.OK).send({ message: SUCCESS })
+    });
+    res.status(StatusCodes.OK).send({ message: SUCCESS })
 }
 
 module.exports = { register, login, logout, setAuthJWTCookie }
