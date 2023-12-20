@@ -59,7 +59,7 @@ UserSchema.methods.comparePassword = async function (password) {
 }
 
 UserSchema.methods.toAuthObject = function () {
-    return { _id: this._id, email: this.email }
+    return { _id: this._id, email: this.email, role: this.role }
 }
 
 module.exports = mongoose.model('User', UserSchema)

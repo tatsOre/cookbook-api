@@ -2,7 +2,10 @@ const recipe = require("../controllers/recipeController");
 const auth = require("../middleware/authentication");
 
 module.exports = app => {
-    app.get("/api/v2/recipes", recipe.getAllRecipes)
+    app.get("/api/v2/recipes",
+        auth.verifyUserCookieToken,
+        recipe.getAllRecipes
+    )
 
     app.post(
         '/api/v2/recipes',
@@ -13,6 +16,7 @@ module.exports = app => {
     app.get(
         "/api/v2/recipes/:id",
         recipe.findDocument,
+        auth.verifyUserCookieToken,
         recipe.getRecipe
     )
 

@@ -65,7 +65,12 @@ const setAuthJWTCookie = (req, res) => {
             sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
             secure: process.env.NODE_ENV === "development" ? false : true
         })
-        .json({ user: req.user })
+        .json({
+            user: {
+                email: req.user.email,
+                _id: req.user._id
+            }
+        })
 }
 
 /**
@@ -78,7 +83,7 @@ const logout = async (req, res) => {
         sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
         secure: process.env.NODE_ENV === "development" ? false : true,
     });
-    res.status(StatusCodes.OK).send({ message: SUCCESS })
+    res.status(StatusCodes.OK).send()
 }
 
 module.exports = { register, login, logout, setAuthJWTCookie }

@@ -112,10 +112,15 @@ exports.getUserProfile = async (req, res) => {
 exports.updateUser = async (req, res) => {
     const userID = req.user?._id
 
-    const user = await UserModel.findOneAndUpdate({ _id: userID }, req.body, {
-        runValidators: true,
-        new: true,
-    });
+    // Logged in user is dif from request id
+    if (userID.toString() !== req.params.id) {
+        throw new UnauthorizedError(UNAUTHORIZED)
+    }
+    // I am using findOne here to use pre save hook, modify to allow other req.body fields:
+    const user = await User.findOne({ _id: userID });
+
+    user.password = req.body.password;
+    await user.save()
 
     res.status(StatusCodes.OK).json({ message: SUCCESS })
 };

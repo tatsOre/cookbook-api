@@ -1,12 +1,26 @@
 const mongoose = require("mongoose")
 const { StatusCodes } = require('http-status-codes')
 const { NotFoundError, UnauthorizedError } = require("../errors")
-const { NOT_FOUND, SUCCESS } = require("../errors/response-messages")
+const { NOT_FOUND, FORBIDDEN, SUCCESS } = require("../errors/response-messages")
 
 const Recipe = mongoose.model("Recipe")
 
+/**
+ * Middleware: findDocument
+ * 
+ * @description Finds a document by its unique identifier and attaches it to the request object.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * 
+ * @throws {NotFoundError} If the requested document is not found.
+ * 
+ * @returns {void}
+ */
 exports.findDocument = async (req, res, next) => {
     const doc = await Recipe.findOne({ _id: req.params.id })
+
     if (!doc)
         throw new NotFoundError(NOT_FOUND.RESOURCE_NOT_FOUND(req.params.id))
 
@@ -15,74 +29,87 @@ exports.findDocument = async (req, res, next) => {
     next()
 }
 
-/**  
- * GET /api/v2/recipes  
- * Admin level only //"624e14a6693762201a694070"
+/**
+ * Route Handler: createRecipe
+ * Route: POST /api/v2/recipes  
+ * 
+ * @description Creates a new recipe using the provided request body and
+ * associates it with the currently authenticated user.
+ * 
+ * @returns {void}
  */
-exports.getAllRecipes = async (req, res) => {
-    const docs = await Recipe.find({ public: true})
-    res.status(StatusCodes.OK).json({ count: docs.length, docs: docs })
-}
-
-/**  POST /api/v2/recipe  */
 exports.createRecipe = async (req, res) => {
-    req.body.author = req.user?._id
+    // User comes from middleware authenticateUserCookieToken:
+    req.body.author = req.user._id
     const doc = await Recipe.create({ ...req.body })
     res.status(StatusCodes.CREATED).json({ doc: doc._id })
 }
 
-/**  GET /api/v2/recipe/:id  */
-exports.getRecipe = async (req, res) => {
-    /**
-        new param: .../:id?view=true
-    
-        if (req.recipe.author === authenticatedUser) {
-            send recipe
-        } else {
-            if (param.view === true && req.recipe.public === true) {
-                send recipe
-            } else {
-                forbidden
-            }
-        }
-     */
-    res.status(StatusCodes.OK).json({ doc: req.recipe })
+/** 
+ * Route Handler: getAllRecipes
+ * Route: GET /api/v2/recipes
+ * Admin only - testing purposes
+ */
+exports.getAllRecipes = async (req, res) => {
+    const query = req.user?.role === "admin" ? {} : { public: true }
+
+    const docs = await Recipe.find(query)
+
+    res.status(StatusCodes.OK).json({ count: docs.length, docs })
 }
 
-/**  PATCH /api/v2/recipe/:id  */
-exports.updateRecipe = async (req, res) => {
-    // Should I add a layer of protection with author?
+/**  GET /api/v2/recipe/:id  */
+exports.getRecipe = async (req, res) => {
+    const authenticatedUser = req.user?._id.toString()
+    const author = req.recipe.author._id.toString()
 
+    if ((author === authenticatedUser) || req.recipe.public) {
+        return res.status(StatusCodes.OK).json(req.recipe)
+    }
+
+    throw new UnauthorizedError(FORBIDDEN)
+}
+
+/**
+ * Route Handler: updateRecipe
+ * Route: PATCH /api/v2/recipe/:id
+ * 
+ * @description Updates an existing recipe with the specified ID using the provided request body.
+ * 
+ */
+exports.updateRecipe = async (req, res) => {
+    // Authorization has already been handled in the middleware that is executed earlier.
     const doc = await Recipe.findOneAndUpdate(
         { _id: req.params.id }, req.body, { runValidators: true }
     )
-
     res.status(StatusCodes.OK).json({ doc: doc._id })
 }
 
 /**
- * DELETE /api/v1/recipe/:id
+ * Route Handler: updateRecipePrivacy
+ * Route: GET /recipes/publish/:id
+ * 
+ * @description Toggles the privacy status of a recipe document.
  */
-exports.deleteRecipe = async (req, res) => {
-    // Should I add a layer of protection with author?
-    await Recipe.findByIdAndDelete({ _id: req.params.id })
-    res.status(StatusCodes.OK).send({ message: SUCCESS })
-}
-
-/**
- * Toggles recipe privacy
- * GET /recipes/publish/:id
- */
-
 exports.updateRecipePrivacy = async (req, res) => {
+    // Authorization has already been handled in the middleware that is executed earlier.
     req.recipe.public = !req.recipe.public
-    req.recipe.save()
+    await req.recipe.save()
+
     res.status(StatusCodes.OK).json({
         doc: req.recipe._id,
         public: req.recipe.public
     })
 }
 
+/**
+ * DELETE /api/v1/recipe/:id
+ */
+exports.deleteRecipe = async (req, res) => {
+    // Authorization has already been handled in the middleware that is executed earlier.
+    await Recipe.findByIdAndDelete({ _id: req.params.id })
+    res.status(StatusCodes.OK).json({ message: SUCCESS })
+}
 /**
  * GET /api/v1/recipes/sort?:key=:value
  * Sort public recipes by query (category|cuisine).
@@ -105,7 +132,7 @@ exports.getLatestRecipes = async (req, res) => {
     const limit = parseInt(req.query.limit) || 6
     const skip = page * limit - limit;
 
-    const decoded = getUserFromJWT(req)
+    const decoded = getUserFromJWT(req) // acá que
 
     const query = !decoded
         ? { public: true }
@@ -122,7 +149,9 @@ exports.getLatestRecipes = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit)
 
-    res.json({ total: count, pages: totalPages, page, recipes })
+    res
+        .status(StatusCodes.OK)
+        .json({ count, page, pages: totalPages, docs: recipes })
 };
 
 /**

@@ -32,6 +32,12 @@ module.exports = app => {
         user.lookUpByEmail
     )
 
+    app.put(
+        '/api/v2/users/:id',
+        authenticateUserCookieToken,
+        user.updateUser
+    )
+
     app.delete(
         '/api/v2/users/:id',
         authenticateUserCookieToken,
