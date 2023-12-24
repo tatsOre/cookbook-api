@@ -29,6 +29,75 @@ exports.findDocument = async (req, res, next) => {
     next()
 }
 
+/** 
+ * Route Handler: getAllDocuments
+ * Route: GET /api/v2/recipes-all
+ * Admin only - testing purposes
+ */
+exports.findAllDocuments = async (req, res) => {
+    const query = req.user?.role === "admin" ? {} : { public: true }
+
+    const docs = await Recipe.find(query)
+
+    res.status(StatusCodes.OK).json({ count: docs.length, docs })
+}
+
+/**
+ * Route Handler: getRecipe
+ * GET /api/v2/recipe/:id
+ */
+
+exports.getRecipe = async (req, res) => {
+    const authenticatedUser = req.user?._id.toString()
+    const author = req.recipe.author._id.toString()
+
+    if ((author === authenticatedUser) || req.recipe.public) {
+        return res.status(StatusCodes.OK).json(req.recipe)
+    }
+
+    throw new UnauthorizedError(FORBIDDEN)
+}
+
+/**  
+ * Route Handler: getAllRecipes
+ * GET /api/v2/recipes?page=2&limit=2&sort=title,-updatedAt (EX)
+ * fields with minus(-) == -1 == desc
+ */
+
+exports.getAllRecipes = async (req, res) => {
+    const { sort } = req.query
+
+    const authenticatedUser = req.user?._id
+
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const skip = page * limit - limit
+
+    const query = authenticatedUser
+        ? { public: true, author: { $ne: authenticatedUser } }
+        : { public: true }
+
+    // Mongo sort is case sensitive..., with locale the issue is temp "solved"
+    let recipesPromise = Recipe.find(query).collation({ locale: "en" })
+
+    if (sort) {
+        const sortList = sort.split(',').join(' ')
+        recipesPromise = recipesPromise.sort(sortList)
+    } else {
+        recipesPromise = recipesPromise.sort({ createdAt: -1 })
+    }
+
+    recipesPromise = recipesPromise.skip(skip).limit(limit)
+
+    const countPromise = Recipe.find(query).count()
+
+    const [recipes, count] = await Promise.all([recipesPromise, countPromise])
+
+    res
+        .status(StatusCodes.OK)
+        .json({ count, page, pages: Math.ceil(count / limit), docs: recipes })
+}
+
 /**
  * Route Handler: createRecipe
  * Route: POST /api/v2/recipes  
@@ -43,31 +112,6 @@ exports.createRecipe = async (req, res) => {
     req.body.author = req.user._id
     const doc = await Recipe.create({ ...req.body })
     res.status(StatusCodes.CREATED).json({ doc: doc._id })
-}
-
-/** 
- * Route Handler: getAllRecipes
- * Route: GET /api/v2/recipes
- * Admin only - testing purposes
- */
-exports.getAllRecipes = async (req, res) => {
-    const query = req.user?.role === "admin" ? {} : { public: true }
-
-    const docs = await Recipe.find(query)
-
-    res.status(StatusCodes.OK).json({ count: docs.length, docs })
-}
-
-/**  GET /api/v2/recipe/:id  */
-exports.getRecipe = async (req, res) => {
-    const authenticatedUser = req.user?._id.toString()
-    const author = req.recipe.author._id.toString()
-
-    if ((author === authenticatedUser) || req.recipe.public) {
-        return res.status(StatusCodes.OK).json(req.recipe)
-    }
-
-    throw new UnauthorizedError(FORBIDDEN)
 }
 
 /**
@@ -110,56 +154,14 @@ exports.deleteRecipe = async (req, res) => {
     await Recipe.findByIdAndDelete({ _id: req.params.id })
     res.status(StatusCodes.OK).json({ message: SUCCESS })
 }
-/**
- * GET /api/v1/recipes/sort?:key=:value
- * Sort public recipes by query (category|cuisine).
- */
-exports.getRecipesByQuery = async (req, res) => {
-    const { field, value } = req.query
-    const query = new RegExp(value, "gi")
-    const recipes = await Recipe.find({
-        public: true,
-        [field]: query,
-    });
-    res.json(recipes)
-}
-
-/**  GET /api/v2/recipes?sort=asc
- * GET /api/v2/recipes?sort=:value
- */ // filter by query, sort (date)
-exports.getLatestRecipes = async (req, res) => {
-    const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 6
-    const skip = page * limit - limit;
-
-    const decoded = getUserFromJWT(req) // acá que
-
-    const query = !decoded
-        ? { public: true }
-        : { public: true, author: { $ne: decoded.user._id } }
-
-    const recipesPromise = Recipe.find(query)
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: "desc" });
-
-    const countPromise = Recipe.find({ public: true }).count()
-
-    const [recipes, count] = await Promise.all([recipesPromise, countPromise])
-
-    const totalPages = Math.ceil(count / limit)
-
-    res
-        .status(StatusCodes.OK)
-        .json({ count, page, pages: totalPages, docs: recipes })
-};
 
 /**
  * GET /api/v1/recipes/search?q=[query]
  */
 exports.searchRecipes = async (req, res) => {
     const { q } = req.query;
-    let recipes = [];
+    let recipes = []
+
     recipes = await Recipe.find(
         {
             public: true,
@@ -181,4 +183,4 @@ exports.searchRecipes = async (req, res) => {
         }).limit(5);
     }
     res.json(recipes);
-};
+}

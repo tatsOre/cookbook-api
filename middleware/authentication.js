@@ -49,7 +49,7 @@ const verifyUserCookieToken = async (req, res, next) => {
     const token = req.cookies[process.env.COOKIE_SECRET]
     // If the JWT token is not present in the cookie or decoded token is not valid, req.user == null
     const decoded = token && JWT.verify(token)
-    console.log({ token, decoded })
+
     req.user = decoded ? decoded.user : null
 
     next()
