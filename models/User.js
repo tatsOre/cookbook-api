@@ -32,7 +32,10 @@ const UserSchema = new mongoose.Schema({
         },
     },
     about: String,
-    avatar: String,
+    avatar: {
+        url: String,
+        public_id: String
+    },
     favorites: [{ type: Schema.Types.ObjectId, ref: "Recipe" }],
     role: {
         type: String,

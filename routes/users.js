@@ -17,25 +17,28 @@ module.exports = app => {
         user.getCurrentUserFavorites
     )
 
+    app.patch('/api/v2/users/me/change-password',
+        authenticateUserCookieToken,
+        user.updateUserPassword
+    )
+
+    app.patch('/api/v2/users/me/update-profile',
+        authenticateUserCookieToken,
+        user.updateUserProfile
+    )
+
     app.patch('/api/v2/users/me/favorites/:id',
         authenticateUserCookieToken,
         user.updateUserFavorites
     )
 
     app.get('/api/v2/users/:id/profile',
-        authenticateUserCookieToken,
-        user.getUserProfile
+        user.getUserPublicProfile
     )
 
     app.post(
         '/api/v2/users/lookup-email',
         user.lookUpByEmail
-    )
-
-    app.put(
-        '/api/v2/users/:id',
-        authenticateUserCookieToken,
-        user.updateUser
     )
 
     app.delete(
